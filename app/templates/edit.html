@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="static/css/bootstrap.css" rel="stylesheet">
+    <link href="static/css/common.css" rel="stylesheet">
+    <script src="static/js/jquery-3.0.0.min.js"></script>
+    <link rel="stylesheet" type="text/css"
+          href="static/tinymce/js/tinymce/plugins/codesample/css/prism.css">
+    <script src="static/js/api.js"></script>
+    <script>
+        var insertTweet = function(tweet) {
+            var t = tweet;
+            var template = `
+                ${t.created_time} : ${t.content}
+                <a href="tweet/update/${t.id}">编辑</a>
+                <a href="tweet/delete/${t.id}">删除</a>
+            `;
+            $('#id-div-tweets').append(template);
+        };
+
+        var addNewTweet = function() {
+            var form = {
+                'title': $('#title').val(),
+                'content': tinymce.activeEditor.getContent(), //tinyMCE.get('content').getContent()
+                'summary': $('#summary').val()
+            };
+            var success = function (r) {
+                log('login, ', r);
+                if(r.success) {
+                    insertTweet(r.data);
+                    window.location.href = r.next;
+                } else {
+                    log(r.message);
+                }
+            };
+            var error = function (err) {
+                log(err);
+
+            };
+            vip.tweetAdd(form, success, error);
+        };
+
+        var bindActions = function() {
+            $('#id-button-tweet-add').on('click', function(){
+                addNewTweet();
+                console.log('hahah')
+            });
+        };
+
+        var __main = function() {
+            bindActions();
+        };
+
+        $(document).ready(function() {
+            __main();
+        });
+    </script>
+    <title></title>
+</head>
+<body>
+<div class="col-md-12">
+    <div class="entry-box submit-article">
+        <h4><strong>发表博文</strong></h4>
+        <hr/>
+        <form class="submit-article" method="post">
+            <div class="form-group">
+                <label class="control-label" for="title">标题</label>：
+                <input class="submit-article-title" id="title" name="title" required="" type="text" value="">（1-50字）
+            </div>
+            <div class="form-group">
+                <textarea id="content" name="content"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="control-label" for="summary">博文摘要</label>（显示在博客首页）<br>
+                        <textarea class="submit-article-summary form-control" id="summary" name="summary"
+                                  required=""></textarea>
+            </div>
+            <div class="submit-article-button">
+                <button id="id-button-tweet-add" type="button" class="btn btn-success">提交</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+<script src="static/js/jquery-2.2.1.min.js"></script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/tinymce/js/tinymce/tinymce.min.js"></script>
+<script src="static/tinymce/js/tinymce/plugins/codesample/plugin.min.js"></script>
+<script type="text/javascript" src="static/js/tinymce_setup.js"></script>
+</body>
+</html>

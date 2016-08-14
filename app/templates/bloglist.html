@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="1470738168##5ffa595ca4597f80bde6ff9f7915472e9805605e"/>
+    <title>
+
+        AnyBlog
+
+    </title>
+
+    <link href="static/css/bootstrap.css" rel="stylesheet">
+    <link href="static/css/common.css" rel="stylesheet">
+    <script src="static/js/jquery-3.0.0.min.js"></script>
+    <script src="static/js/api.js"></script>
+    <script>
+
+        var addNewTweet = function () {
+            var form = {
+                'title': $('#title').val(),
+                'content': tinymce.activeEditor.getContent(), //tinyMCE.get('content').getContent()
+                'summary': $('#summary').val()
+            };
+            var success = function (r) {
+                log('login, ', r);
+                if (r.success) {
+                    log('success, ', r);
+                } else {
+                    log(r.message);
+                }
+            };
+            var error = function (err) {
+                log(err);
+
+            };
+            vip.tweetAdd(form, success, error);
+        };
+
+
+        var deleteArtical = function () {
+            $('body').on('click', '.glyphicon', function () {
+                var self = $(this);
+                var artical_id = this.dataset.id;
+                console.log('bid', artical_id);
+                var request = {
+                    url: '/api/bloglist/delete/' + artical_id,
+                    type: 'get',
+                    contentType: 'application/json',
+                    success: function (r) {
+                        console.log('r', r);
+//                        self.closest('.entry-box').remove();
+                        if (r.success) {
+//                            self.closest('.entry-box').remove();
+                            self.closest('.entry-box').remove();
+                            console.log('lalala')
+                        }
+                    },
+                    error: function (err) {
+                        console.log('error', err);
+                    }
+                };
+                $.ajax(request);
+            });
+        };
+
+
+        var __main = function () {
+            deleteArtical();
+        };
+
+        $(document).ready(function () {
+            __main();
+        });
+    </script>
+
+</head>
+<body>
+<header>
+    <div class='header-top'>
+        <div class="container">
+            <h2 class="blog-title">
+                <a href="">AnyBlog</a>
+            </h2>
+            <ul class="lead signature ">Now is better than never.Although never is often better than right now.</ul>
+        </div>
+    </div>
+    <nav class="navbar navbar-default " role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">切换导航</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li class=""><a href="bloglist"><span class="glyphicon glyphicon-home"> 博客大厅</span></a></li>
+
+
+                   <li class=""><a href="bloglist/{{cur_user.username}}"><span class="glyphicon glyphicon-user"> 我的博客</span></a></li>
+
+                    <li class=""><a href="http://123.207.123.240/" target=_blank><span class="glyphicon glyphicon-play"> AnyTv</span></a></li>
+
+
+
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <img src="">
+                            {{cur_user.username}}<b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="publish">发表博文</a></li>
+                            <li><a href="logout">退出登陆</a></li>
+                        </ul>
+
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="content">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 article">
+                {% for b in bloglist %}
+                <div id='article-entry' class="entry-box">
+                    <div class="article-entry-header">
+                        <h3 class="article-entry-title">
+                            <a href="bloglist/{{b.user.username}}/{{b.id}}">{{b.title}}</a>
+                        </h3>
+                    </div>
+                    <div class="article-entry-info">
+                        <div class="base-info">
+                            <span class="label label-default"><span>{{ moment(b['created_time']).format('LL') }}</span></span>&nbsp;
+                            <span class="label label-primary">
+                                <a style="color: white">
+                                    作者:{{b.user.username}}
+                                </a>
+                            </span>&nbsp;
+                        </div>
+                        {% if username == cur_user.username or cur_user.role == 1 %}
+                        <div class="main-info">
+                            <a href="update/{{b.id}}"><span class="glyphicon glyphicon-pencil"></span></a>
+                            <span class="glyphicon glyphicon-remove" data-id="{{b.id}}"></span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="article-entry-sum">
+                        <p>{{b.preview}}</p>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class=pagination>
+                    {% if pagination.has_prev %}
+                    <a href="{{ url }}?page={{ pagination.prev_num }}" class="btn btn-default ">上一页</a>
+                    {% endif %}
+                    {% for page in pagination.iter_pages() %}
+                    {% if page %}
+                    {% if page != pagination.page %}
+                    <a href="{{ url }}?page={{ page }}" class="btn btn-default">{{ page }}</a>
+                    {% else %}
+                    <a href="{{ url }}?page={{ page }}" class="btn btn-default"
+                       disabled="disabled">{{ page }}</a>
+                    {% endif %}
+                    {% else %}
+                    <span class=ellipsis>…</span>
+                    {% endif %}
+                    {% endfor %}
+                    {% if pagination.has_next %}
+                    <a href="{{ url }}?page={{ pagination.next_num }}" class="btn btn-default">下一页</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-4 blog_nav">
+                <div id="个人信息" class="entry-box">
+                    <h5><strong>个人信息</strong></h5>
+
+                    <p><strong>身份: </strong>{{cur_user.username}}</p>
+
+                    <p><strong><a href="publish">发表博客</a></strong></p>
+
+                    <p>欢迎大家使用！</p>
+                </div>
+                <div class="entry-box">
+                    <h5><strong>用户列表</strong></h5>
+                    {% for u in all_users %}
+                    <p>
+                        <a href="bloglist/{{u.username}}" >{{u.username}}</a>{% if cur_user.role == 1 %}
+                    <a href=api/user/delete/{{u.username}} class="glyphicon glyphicon-remove"></a>
+                    {% endif %}<div class="main-info">
+                        </div>
+                    </p>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <div id="关注技术" class="entry-box">
+                    <h5><strong>关注</strong></h5>
+
+                    <p><span class="label label-default">Python</span> <span class="label label-primary">Linux</span>
+                        <span class="label label-success">JQuery</span></p>
+
+                    <p><span class="label label-danger">Django</span> <span class="label label-info">Flask</span> <span
+                            class="label label-warning">数据库</span></p>
+                </div>
+
+
+                <div id="联系我" class="entry-box">
+                    <h5><strong>作者信息</strong></h5>
+
+                    <p>GitHub主页：<a href="https://github.com/chi1st" target="_blank">https://github.com/chi1st</a></p>
+
+                    <p>简书：<a href="http://www.jianshu.com/users/b0ab4570c9d5" target="_blank">http://www.jianshu.com/users/chi1st</a></p>
+
+                    <p>AnyTV：<a href="http://123.207.123.240/" target="_blank">AnyTv</a></p>
+
+
+                </div>
+
+
+                <div id="Python" class="entry-box">
+                    <h5><strong>Python</strong></h5>
+
+                    <p><img class="currentImg" title="点击查看源网页"
+                            src="http://insights.thoughtworkers.org/wp-content/uploads/2015/07/718-%E4%BD%9F%E8%BE%BE-%E5%85%A8%E6%A0%88%E5%BC%80%E5%8F%91%E8%AF%AD%E8%A8%80Python.png"
+                            alt="" width="350" height="248"/></p>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="footer" style="background-color:#2c3e50">
+    <p class="footer-content">
+        chi1st
+    </p>
+</div>
+<div class="btn-group-vertical floatButton">
+    <button id="goTop" class="btn btn-default" title="去顶部" type="button">
+        <span class="glyphicon glyphicon-arrow-up"></span>
+    </button>
+    <button id="refresh" class="btn btn-default" title="刷新" type="button">
+        <span class="glyphicon glyphicon-refresh"></span>
+    </button>
+    <button id="goBottom" class="btn btn-default" title="去底部" type="button">
+        <span class="glyphicon glyphicon-arrow-down"></span>
+    </button>
+</div>
+
+<script src="static/js/jquery-2.2.1.min.js"></script>
+<script src="static/js/bootstrap.min.js"></script>
+<script src="static/js/floatButton.js"></script>
+
+<script>
+    var csrfToken = $('meta[name="csrf-token"]').attr('content');
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken)
+            }
+        }
+    })
+</script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment-with-locales.min.js"></script>
+<script>
+    moment.locale("en");
+    function flask_moment_render(elem) {
+        $(elem).text(eval('moment("' + $(elem).data('timestamp') + '").' + $(elem).data('format') + ';'));
+        $(elem).removeClass('flask-moment').show();
+    }
+    function flask_moment_render_all() {
+        $('.flask-moment').each(function () {
+            flask_moment_render(this);
+            if ($(this).data('refresh')) {
+                (function (elem, interval) {
+                    setInterval(function () {
+                        flask_moment_render(elem)
+                    }, interval);
+                })(this, $(this).data('refresh'));
+            }
+        })
+    }
+    $(document).ready(function () {
+        flask_moment_render_all();
+    });
+</script>
+<script>
+    moment.locale("zh-cn");
+</script>
+
+</body>
+</html>

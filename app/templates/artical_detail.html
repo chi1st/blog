@@ -1,0 +1,492 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<meta name="baidu-site-verification" content="vSZU5yPYsj" />	
+
+	<title>
+如何实现一个python的web后端框架
+ | GAGASALAMER</title>
+	<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/flat-ui.min.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/mystyle.css">
+
+	<link rel="shortcut icon" href="/static/gagasalamer.ico">
+
+	
+<style type="text/css">
+	h1{
+		font-size:50px;
+	}
+	h2{
+		font-size: 40px;
+	}
+	h3{
+		font-size: 30px;
+	}
+	p{
+		font-size: 15px;
+	}
+	blockquote p{
+		font-size: 17px;
+	}
+	body{
+		font-size: 15px;
+	}
+</style>
+</head>
+<script type="text/javascript">
+$SCRIPT_ROOT = "";
+</script>
+<body style="background-color:#EEE">
+	<nav class="navbar navbar-default navbar-Amethyst" role="navigation" style="margin:10px 0px;">
+	<div class="container">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-01">
+      <span class="sr-only">Toggle navigation</span>
+    </button>
+    <a class="navbar-brand" href="/">GAGASALAMER</a>
+  </div>
+  <div class="collapse navbar-collapse" id="navbar-collapse-01">
+
+    <ul class="nav navbar-nav">
+    	<li>
+    	
+    </li>
+      <li class="active"><a href="/">MYBLOG</a></li>
+      <li><a href="/about">ABOUTME</a></li>
+
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+    	<li id="signin_icon"><a href="#">SIGNIN</a></li>
+    	
+    	
+
+        </ul>
+  </div><!-- /.navbar-collapse -->
+  </div>
+</nav><!-- /navbar -->
+
+
+
+
+
+<div class="container">
+<div class="row">
+	<div class="col-md-12">
+		<article class="article the-font">
+			<h2>如何实现一个python的web后端框架</h2>
+			<p><small><span class="glyphicon glyphicon-calendar" aria-hidden="true"></span><span style="color:#8C8C8C;">2016-06-03 09:26:42</span></small></p>
+			<div class="post-alert">本博客采用创作共用版权协议, 要求署名、非商业用途和保持一致. 转载本博客文章必须也遵循署名-非商业用途-保持一致的创作共用协议</div>
+			<p><p>最近特别忙很久没更博了。。。。那就写一篇还算很干货的吧。</p>
+
+<p>因为最近写了个基于<code>gevent</code>的python的web框架，所以写一篇简单博文，讲讲这个东西的设计。</p>
+
+<p>其实总的来说，虽同是动态语言，不同于<code>ruby</code>方面<code>ruby on rails</code>一枝独秀（我知道还有<code>sinatra</code>），而反观py这边，各个框架各领风骚，大而全的有<code>Django</code>，小而美的有 <code>flask , bottle</code>，要性能的有<code>tornado</code>（虽然这货“啥”都有。。）,以及极致简单，被guido叔称赞为最pythonic的<code>webpy</code>, 那么为什么py领域的web框架这个之多呢？</p>
+
+<p>首先要说明的是，py领域的web框架就我的使用体验来说，和<code>ruby on rails</code>相比还是有点差距的，这张图可以说明一下。</p>
+
+<p><img src="http://7xlen8.com1.z0.glb.clouddn.com/fa69a04986584c6b34a6cb2e868d9f4d.png" alt="pic"></p>
+
+<p>可以看出，py领域还是不那么风骚，而且<code>rails</code>都要出5.0 version了，<code>django</code>才刚刚1.9。</p>
+
+<p>但是不否认<code>django</code>是个优秀的框架，不然类似pinterest和instagram这种神牛公司怎么会用它呢？</p>
+
+<h1>WSGI</h1>
+
+<hr>
+
+<p>要写一个py的web框架，就必须要理解<code>wsgi</code>.</p>
+
+<p>那么什么是<code>wsgi</code>呢？</p>
+
+<p>这里是官网给他的解释（wsgi是pep 333规范里面）</p>
+
+<blockquote>
+<p>WSGI is the Web Server Gateway Interface. It is a specification that describes how a web server communicates with web applications, and how web applications can be chained together to process one request.</p>
+</blockquote>
+
+<p>翻译过来就是，这个东西做了个嫁接层，网络通信基本是基于<code>http</code>协议，而<code>http</code> 协议是基于<code>TCP</code>协议的。</p>
+
+<p>这里好冗长，，，而对于暂时我们就先不管什么<code>TCP</code>协议，在这之上我们使用<code>socket</code> 做网络协议。</p>
+
+<p>上面这段话对我们有用的，总结起来就是，<code>wsgi</code> 包装了<code>socket</code>的东西，使之能与py的application做网络交互（如你的socket网络层可以是c写的，但是你暴露出socket来，我可以对他基于wsgi协议写个py层）</p>
+
+<p>对<code>wsgi</code> 详情感兴趣的同学可以看  <a href="https://www.python.org/dev/peps/pep-0333/">这里</a></p>
+
+<p>以上的东西，暂时对我们的框架理解没太大的影响，你可以理解为wsgi是个黑盒子，它暴露出了很多东西，让你你能去操作你要的事情</p>
+
+<p>我们来看看他暴露了什么</p>
+
+<p>在py的标准库里面有一个wsgi叫<code>wsgiref</code> ,我们基于他写个最简单的application:</p>
+
+<pre><code>    from wsgiref.simple_server import make_server
+
+    def simple_app(environ, start_response):
+        &quot;&quot;&quot;Simplest possible application object&quot;&quot;&quot;
+        status = &#39;200 OK&#39;
+        response_headers = [(&#39;Content-type&#39;, &#39;text/plain&#39;)]
+        start_response(status, response_headers)
+        return [&#39;Hello world!\n&#39;]
+
+    app=make_server(&#39;127.0.0.1&#39;,8000,simple_app)
+    app.serve_forever()
+</code></pre>
+
+<p>好的，这个时候我们跑这个程序，然后在<code>terminal</code>  输入：<code>http http://127.0.0.1:8000</code></p>
+
+<p>可以看到：</p>
+
+<pre><code>    aljundeMacBook-Pro:~ aljun$ http http://127.0.0.1:8000
+    HTTP/1.0 200 OK
+    Content-Length: 13
+    Content-type: text/plain
+    Date: Fri, 03 Jun 2016 08:32:55 GMT
+    Server: WSGIServer/0.1 Python/2.7.11
+
+    Hello world!
+</code></pre>
+
+<p>好的，我们这里看到你的<code>simple_app</code>里面有两个参数，这个是<code>wsgi</code>协议里面规定的两个。</p>
+
+<p>首先是<code>environ</code>这个参数，这个参数包括很多环境参数。</p>
+
+<p>官方对他的解释为：</p>
+
+<blockquote>
+<p>The environ dictionary is required to contain these CGI environment variables, as defined by the Common Gateway Interface specification </p>
+</blockquote>
+
+<p>我们更改下刚刚的程序，看看有写什么参数：</p>
+
+<pre><code>    from wsgiref.simple_server import make_server
+
+    def simple_app(environ, start_response):
+        &quot;&quot;&quot;Simplest possible application object&quot;&quot;&quot;
+        status = &#39;200 OK&#39;
+        response_headers = [(&#39;Content-type&#39;, &#39;text/plain&#39;)]
+        start_response(status, response_headers)
+        for key,value in environ.items():
+            print key,value
+        return [&#39;Hello world!\n&#39;]
+
+    app=make_server(&#39;127.0.0.1&#39;,8000,simple_app)
+    app.serve_forever()
+</code></pre>
+
+<p>可以得到，我们的<code>environ</code>参数：</p>
+
+<pre><code>    rvm_version 1.26.11 (latest)
+    SERVER_PROTOCOL HTTP/1.1
+    SERVER_SOFTWARE WSGIServer/0.1 Python/2.7.11
+    rvm_path /Users/aljun/.rvm
+    TERM_PROGRAM_VERSION 361.1
+    REQUEST_METHOD GET
+    LOGNAME aljun
+    USER aljun
+    HOME /Users/aljun
+    QUERY_STRING 
+    PATH /Users/aljun/anaconda2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/Users/aljun/.rvm/bin
+    wsgi.errors &lt;open file &#39;&lt;stderr&gt;&#39;, mode &#39;w&#39; at 0x1002a61e0&gt;
+    TERM_PROGRAM Apple_Terminal
+    LANG zh_CN.UTF-8
+    TERM xterm-256color
+    SHELL /bin/bash
+    HTTP_CONNECTION keep-alive
+    SERVER_NAME 1.0.0.127.in-addr.arpa
+    REMOTE_ADDR 127.0.0.1
+    SHLVL 1
+    PWD /Users/aljun/example
+    XPC_FLAGS 0x0
+    wsgi.url_scheme http
+    _ /Users/aljun/anaconda2/bin/python
+    SERVER_PORT 8000
+    _system_arch x86_64
+    rvm_bin_path /Users/aljun/.rvm/bin
+    CONTENT_LENGTH 
+    TERM_SESSION_ID 221B75E7-EC58-4152-B581-0CB21C2B1C72
+    XPC_SERVICE_NAME 0
+    CONTENT_TYPE text/plain
+    rvm_prefix /Users/aljun
+    SSH_AUTH_SOCK /private/tmp/com.apple.launchd.VOLZRZ7eY6/Listeners
+    _system_type Darwin
+    wsgi.input &lt;socket._fileobject object at 0x1006cf950&gt;
+    Apple_PubSub_Socket_Render /private/tmp/com.apple.launchd.RPrxYoySso/Render
+    HTTP_HOST 127.0.0.1:8000
+    SCRIPT_NAME 
+    wsgi.multithread True
+    TMPDIR /var/folders/df/cw8ny49n25vb0z0_0wp3yvt80000gn/T/
+    HTTP_ACCEPT */*
+    wsgi.version (1, 0)
+    HTTP_USER_AGENT HTTPie/0.9.3
+    GATEWAY_INTERFACE CGI/1.1
+    wsgi.run_once False
+    OLDPWD /Users/aljun
+    wsgi.multiprocess False
+    __CF_USER_TEXT_ENCODING 0x1F5:0x19:0x34
+    _system_name OSX
+    _system_version 10.11
+    wsgi.file_wrapper wsgiref.util.FileWrapper
+    REMOTE_HOST 1.0.0.127.in-addr.arpa
+    HTTP_ACCEPT_ENCODING gzip, deflate
+    PATH_INFO /
+</code></pre>
+
+<p>可以看到非常多，这里说明一下<code>wsgi.input</code> 就是我们的表单传值</p>
+
+<p>可以看到我们做web通常需要的<code>PATH_INFO</code>，<code>HTTP_USER_AGENT</code>,<code>QUERY_STRING</code>,<code>REQUEST_METHOD</code>,<code>SERVER_PROTOCAOL</code>都在里面了</p>
+
+<p>即是说，这个environ参数给我提供了我们要的网络的所有环境参数</p>
+
+<p>而对于<code>start_response</code>这个参数，官方的说明是：</p>
+
+<blockquote>
+<p>The second parameter passed to the application object is a callable of the form start<em>response(status, response</em>headers, exc_info=None) </p>
+</blockquote>
+
+<p>他基本上要两个参数，一个是状态，即是HTTP状态，例如我们这个程序的<code>200 OK</code>，一个是<code>response_header</code>即是我们传给client端的header，例如我们这里加了一个<code>(&#39;Content-type&#39;, &#39;text/plain&#39;)</code></p>
+
+<p>最后，是你返回的（return）的东西，可以是html也可以是json等等，这次我们返回了一个<code>hello world</code>。</p>
+
+<p>那么，你理解了<code>wsgi</code>在干什么，写一个web框架就真的易如反掌了。</p>
+
+<h1>实现一个web框架</h1>
+
+<hr>
+
+<pre><code>    from wsgiref.simple_server import make_server
+
+
+    class MyApplication():
+
+        def __init__(self, environ, start_response):
+            self.start_response = start_response
+            self.path = environ[&#39;PATH_INFO&#39;]
+            self.request_method = environ[&#39;REQUEST_METHOD&#39;]
+
+        def __iter__(self):
+            if self.path == &#39;/&#39;:
+                status = &#39;200 OK&#39;
+                response_headers = [(&#39;Content-type&#39;, &#39;text/plain&#39;)]
+                self.start_response(status, response_headers)
+                yield &quot;I&#39;m in the home&quot;
+
+            elif self.path == &#39;/aljun&#39;:
+                status = &#39;200 OK&#39;
+                response_headers = [(&#39;Content-type&#39;, &#39;text/plain&#39;)]
+                self.start_response(status, response_headers)
+                yield &quot;I&#39;m in the aljun&#39;s home,it&#39;s pretty&quot;
+
+            else:
+                status = &#39;404 NOT FOUND&#39;
+                response_headers = [(&#39;Content-type&#39;, &#39;text/plain&#39;)]
+                self.start_response(status, response_headers)
+                yield &quot;404 NOT FOUND&quot;
+
+    if __name__ == &quot;__main__&quot;:
+        app = make_server(&#39;127.0.0.1&#39;, 8000, MyApplication)
+        app.serve_forever()
+</code></pre>
+
+<p>这样，我们控制了路由</p>
+
+<p>在我们的<code>terminal</code>里面跑：，就可以看到：</p>
+
+<pre><code>    aljundeMacBook-Pro:~ aljun$ http http://127.0.0.1:8000
+    HTTP/1.0 200 OK
+    Content-type: text/plain
+    Date: Fri, 03 Jun 2016 09:15:03 GMT
+    Server: WSGIServer/0.1 Python/2.7.11
+
+    I&#39;m in the home
+
+    aljundeMacBook-Pro:~ aljun$ http http://127.0.0.1:8000/aljun
+    HTTP/1.0 200 OK
+    Content-type: text/plain
+    Date: Fri, 03 Jun 2016 09:16:01 GMT
+    Server: WSGIServer/0.1 Python/2.7.11
+
+    I&#39;m in the aljun&#39;s home,it&#39;s pretty
+
+    aljundeMacBook-Pro:~ aljun$ http http://127.0.0.1:8000/www
+    HTTP/1.0 404 NOT FOUND
+    Content-type: text/plain
+    Date: Fri, 03 Jun 2016 09:16:06 GMT
+    Server: WSGIServer/0.1 Python/2.7.11
+
+    404 NOT FOUND
+</code></pre>
+
+<p>不同的路由，做了不同的事情。</p>
+
+<h1>“搞个大新闻”</h1>
+
+<hr>
+
+<p>当然了，其实最简单的web框架都应该没有上面的<code>MyApplication</code>简陋。</p>
+
+<p>这里是我做web框架的一些扩大化的架构想法</p>
+
+<p>首先是路由，你可以使用正则表达式(<code>re</code>)去做，另外你最好做成像flask那种很人性化的route系统如(r&#39;/xxx/<a href="int:id">int:id</a>/<a href="string:name">string:name</a>&#39;) 然后这些值我们都可以获得</p>
+
+<p>接着是你要足够的满足HTTP状态，今天我们只是用了404和200.</p>
+
+<p>然后，http是需要传输东西的，如值，如文件等等，你可以基于<code>request_method</code> 做不同值的RESTful设计。</p>
+
+<p>对于<code>query_string</code>也要做好</p>
+
+<p>而<code>header</code>里面有很多状态，甚至是<code>set-cookies</code>这种，对于实现session至关重要的</p>
+
+<p>把这些做好，基本的一个可以做业务的web框架也就渐渐成型了。</p>
+
+<p>因为最近太忙了。这篇文章没有写太多。不好意思啊</p>
+
+<p>最后</p>
+
+<p>打个广告</p>
+
+<p>自己最近写的web 框架</p>
+
+<p><img src="http://7xlen8.com1.z0.glb.clouddn.com/JOLLA.jpg" alt="pic"></p>
+
+<p>文档在这里 <a href="http://jolla.readthedocs.io/zh/latest/">中文文档</a></p>
+
+<p>安装也很简单</p>
+
+<pre><code>pip install jolla
+</code></pre>
+
+<p>希望大家多多支持</p>
+</p>
+			
+			<div style="border-top:1px solid #EBEBEB;padding:10px 5px;margin-top:20px;">
+				<a href="/category/web开发"><span class="label label-default"><span class="glyphicon glyphicon-leaf" aria-hidden="true"></span> web开发</span></a>
+				<a href="/" class="btn btn-xs " style="float:right">返回首页<span class=" glyphicon glyphicon-log-out" aria-hidden="true"></span></a>
+			</div>
+		</article>
+		<article class="article the-font">
+			<div class="bdsharebuttonbox"><a href="#" class="bds_more" data-cmd="more"></a><a href="#" class="bds_qzone" data-cmd="qzone"></a><a href="#" class="bds_tsina" data-cmd="tsina"></a><a href="#" class="bds_tqq" data-cmd="tqq"></a><a href="#" class="bds_renren" data-cmd="renren"></a><a href="#" class="bds_weixin" data-cmd="weixin"></a></div>
+
+
+
+
+
+
+			<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="24" data-title="如何实现一个python的web后端框架" data-url="aljun.me/post/24"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"gagablog"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+<!-- 多说公共JS代码 end -->
+
+		</article>
+		
+		
+  	</div>
+    <div class="btn-group-vertical floatButton">
+    <button id="goTop" class="btn btn-default" title="去顶部" type="button">
+        <span class="glyphicon glyphicon-arrow-up"></span>
+    </button>
+    <button id="refresh" class="btn btn-default" title="刷新" type="button">
+        <span class="glyphicon glyphicon-refresh"></span>
+    </button>
+    <button id="goBottom" class="btn btn-default" title="去底部" type="button">
+        <span class="glyphicon glyphicon-arrow-down"></span>
+    </button>
+</div>
+</div>
+</div>
+
+
+
+
+<script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"2","bdPic":"","bdStyle":"0","bdSize":"16"},"share":{},"image":{"viewList":["qzone","tsina","tqq","renren","weixin"],"viewText":"分享到：","viewSize":"16"},"selectShare":{"bdContainerClass":null,"bdSelectMiniList":["qzone","tsina","tqq","renren","weixin"]}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];</script>
+
+
+
+
+
+
+
+<div class="signin" style="height:900px;width:400px;position:fixed;top:25%;left:40%;display:none" id="vzinv_signin">
+	<div class="panel panel-success">
+		<div class="panel-heading">SIGN IN<div style="right:18px;top:18px;position:absolute" id="signup_close"><span class="glyphicon glyphicon-remove" aria-hidden="true" id="signin_close" style="cursor:pointer"></span></div></div>
+		<div class="panel-body">
+			<div class="login-form">
+            <div class="control-group">
+              <input type="text" class="form-control" value="" placeholder="Enter your name" id="login-name" />
+              <label class="login-field-icon fui-man-16" for="login-name"></label>
+            </div>
+
+            <div class="control-group">
+              <input type="password" class="form-control" value="" placeholder="Password" id="login-pass" />
+              <label class="login-field-icon fui-lock-16" for="login-pass"></label>
+            </div>
+            <label class="checkbox">
+            	<span class="icon"></span>
+            	<span class="icon-to-fade"></span>
+            	<input type="checkbox">keep alive.
+            </label>
+
+            <a class="btn btn-primary btn-large btn-block" href="#">Login</a>
+
+          </div>
+		</div>
+	</div>
+</div>
+
+
+
+
+
+
+<div style="background:#384452 none repeat scroll 0% 0%;color:#BFC9D3">
+	<div class="container">
+		<div class="row" style="padding-top:30px;">
+			<div class="col-md-7">
+				<p class="lead"> Designed and built with all the love in the world by the Mr.<a href="/">ALJUN</a>.</p>
+				<p >@SERVER BY <strong>NGINX</strong> AND POWER BY <strong>DIGITALOCEAN</strong>.</p>
+				
+			</div>
+			<div class="col-md-5">
+				<div>
+					<h5 style="margin-bottom:15px;margin-left:18px;"><strong>CONTACT ME</strong></h5>
+					<ul>
+						<li><a href="#"><span class="glyphicon glyphicon-user" aria-hidden="true"></span> &nbsp WECHAT</a></li>
+						<li><a href="http://weibo.com/2277966967/profile"><span class="glyphicon glyphicon-piggy-bank" aria-hidden="true"></span> &nbsp WEIBO</li>
+						<li><a href="https://github.com/salamer"><span class="glyphicon glyphicon-grain" aria-hidden="true"></span>&nbsp GITHUB</a></li>
+						<li><a href="#"><span class=" glyphicon glyphicon-send" aria-hidden="true"></span>&nbsp EMAIL:<strong>contactsalamer@163.com</strong></a></li>
+					</ul>
+				</div>
+			</div>
+			<div class="col-md-12">
+				<p> <small>© COPYRIGHT BY GAGASALAMER 2015</small></p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript" src="/static/js/jquery-3.0.0.min.js"></script>
+
+<script type="text/javascript" src="/static/js/mystyle.js"></script>
+
+<script type="text/javascript" src="/static/js/bootstrap.min.js"></script>
+
+
+
+
+</body>
+</html>
